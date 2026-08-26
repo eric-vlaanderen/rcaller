@@ -10,26 +10,37 @@ import com.github.rcaller.util.Globals;
 
 import javax.swing.*;
 import java.io.*;
+import java.nio.file.Path;
 
 public class RCode {
 
-    private StringBuilder code;
-    private TempFileService tempFileService = null;
+    private StringBuilder code = new StringBuilder();
+    private final TempFileService tempFileService;
     private final RCallerOptions rCallerOptions;
 
-
     private RCode() {
-        this.code = new StringBuilder();
-        rCallerOptions = RCallerOptions.create();
+        this.rCallerOptions = RCallerOptions.create();
+        this.tempFileService = new TempFileService();
+    }
+
+    private RCode(final Path tempDir) {
+        this.rCallerOptions = RCallerOptions.create();
+        this.tempFileService = new TempFileService(tempDir);
     }
 
     private RCode(RCallerOptions rCallerOptions) {
-        this.code = new StringBuilder();
         this.rCallerOptions = rCallerOptions;
+        this.tempFileService = new TempFileService();
     }
 
     public static RCode create() {
         RCode rCode = new RCode();
+        rCode.clear();
+        return rCode;
+    }
+
+    public static RCode create(final Path tempDir) {
+        RCode rCode = new RCode(tempDir);
         rCode.clear();
         return rCode;
     }
@@ -66,6 +77,10 @@ public class RCode {
 
     public StringBuilder getCode() {
         return (this.code);
+    }
+
+    public TempFileService getTempFileService() {
+        return tempFileService;
     }
 
     public final void clear() {
@@ -171,7 +186,7 @@ public class RCode {
     }
 
     public void addDataFrame(String name, DataFrame dataFrame) {
-        RCodeUtils.addDataFrame(code, name, dataFrame);
+        RCodeUtils.addDataFrame(code, name, dataFrame, tempFileService);
     }
     
     public File startPlot() throws IOException {
@@ -179,9 +194,6 @@ public class RCode {
     }
 
     public File startPlot(GraphicsType type) throws IOException {
-        if(tempFileService == null){
-            tempFileService = new TempFileService();
-        }
         //File f = File.createTempFile("RPlot", "." + type.name());
         File f = tempFileService.createTempFile("RPlot", "." + type.name());
         switch (type) {
@@ -227,7 +239,7 @@ public class RCode {
     }
     
     public void deleteTempFiles(){
-        if (tempFileService != null){
+        if (tempFileService != null) {
             tempFileService.deleteRCallerTempFiles();   
         }
     }
